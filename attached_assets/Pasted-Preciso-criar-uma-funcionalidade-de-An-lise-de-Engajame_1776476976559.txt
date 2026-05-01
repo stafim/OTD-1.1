@@ -1,0 +1,49 @@
+Preciso criar uma funcionalidade de "Análise de Engajamento de Trechos". O objetivo é analisar o volume e a taxa de conversão dessas propostas para entender quais rotas são mais atrativas para os motoristas e quais têm maior rejeição.
+
+Tarefas a serem desenvolvidas:
+
+1. Criação da Query / Camada de Dados (Repository):
+Crie uma query de agregação eficiente (via SQL, ORM ou Prisma, dependendo do nosso stack) que agrupe as propostas de transporte pelo campo de "Trecho" (Origem -> Destino).
+A query deve retornar as seguintes métricas por trecho:
+
+total_proposals: Total de propostas enviadas para motoristas naquele trecho.
+
+total_accepted: Total de respostas com status ACCEPTED.
+
+total_rejected: Total de respostas com status REJECTED.
+
+total_pending: Total de respostas com status PENDING.
+
+unique_drivers_reached: Quantidade de motoristas únicos que receberam propostas para este trecho.
+
+acceptance_rate: (total_accepted / total_proposals) * 100.
+
+2. Regras de Negócio (Service Layer):
+
+Crie um método no Service que consuma esses dados e os classifique.
+
+Crie uma regra de "Limite de Relevância" (Threshold): Trechos com menos de X propostas enviadas (ex: mínimo de 10) devem ser categorizados separadamente como "Sem dados suficientes", para evitar que um trecho com 1 proposta e 1 aceite apareça no topo do ranking com 100% de aceitação.
+
+O retorno deve entregar os dados ordenados de duas formas para o frontend: most_accepted_routes (ordenado pela maior taxa de aceitação E volume) e least_accepted_routes (maior taxa de rejeição).
+
+3. API Endpoint (Controller):
+
+Crie uma rota GET (ex: /api/analytics/routes-engagement) que exponha esses dados. Adicione suporte a filtros por período (data inicial e data final) para analisarmos o comportamento sazonal dos motoristas.
+
+4. Interface de Usuário (Frontend / UI):
+
+Crie um componente de Dashboard (usando a biblioteca de componentes atual do projeto, como Tailwind/Shadcn UI ou similar).
+
+O componente deve exibir:
+
+Um card de destaque com o "Trecho mais atrativo" e o "Trecho mais problemático".
+
+Uma tabela ou gráfico de barras horizontais listando os trechos, mostrando o volume total de propostas e a barra de progresso com a porcentagem de Aceite vs Recusa.
+
+Restrições Técnicas:
+
+Escreva um código limpo, modular e tipado.
+
+Otimize a agregação de dados para não onerar o banco de dados caso a tabela de propostas tenha centenas de milhares de registros. Se sugerir alguma view materializada ou cache, por favor explique a abordagem.
+
+Inicie analisando a estrutura de dados atual necessária. Me pergunte quais os nomes exatos das tabelas/models do banco de dados antes de codificar a query final.

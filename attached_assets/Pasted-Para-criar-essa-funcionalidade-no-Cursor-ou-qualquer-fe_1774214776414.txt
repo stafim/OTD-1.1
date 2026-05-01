@@ -1,0 +1,44 @@
+Para criar essa funcionalidade no Cursor ou qualquer ferramenta de Vibe Coding, você precisa de um prompt que defina a estrutura de dados, a lógica de negócio (carência) e a interface de usuário de uma só vez.
+
+Copie e cole o prompt abaixo. Ele está estruturado para que a IA entenda as regras de negócio e as dependências financeiras:
+
+Prompt para Vibe Coding: Sistema de Gestão de Pátio Mensal
+"Preciso implementar um módulo de Fechamento Mensal de Pátio no meu sistema. O objetivo é transformar o cálculo atual (que é apenas uma soma total) em um controle financeiro mensal com status de pagamento e geração de relatórios.
+
+1. Regras de Negócio e Lógica:
+
+Cada Cliente tem um valor_diaria e um campo dias_carencia (inteiro).
+
+O custo de cada Chassi deve ser calculado individualmente: (Dias totais no pátio - Dias de carência) * valor_diaria.
+
+Se o Chassi ficou menos dias que a carência, o valor é R$ 0,00.
+
+A carência é aplicada apenas uma vez na entrada do chassi no pátio.
+
+2. Novas Funcionalidades Requeridas:
+
+Dashboard de Fechamento: Uma tela onde eu seleciono o Mês e o Ano. O sistema deve listar todos os clientes que tiveram chassis no pátio naquele período.
+
+Processamento de Fatura: Um botão para 'Gerar Fechamento' do mês. Isso deve salvar os valores em uma tabela faturas para que o histórico não mude se o valor da diária do cliente for alterado no futuro.
+
+Controle de Status: Na listagem mensal, cada cliente deve ter um status visual de 'PAGO' ou 'NÃO PAGO', com um botão para alternar esse status (baixa de pagamento).
+
+Geração de PDF (Espelho de Fatura): Um botão 'Gerar NF/Relatório' que gera um PDF contendo:
+
+Dados do cliente.
+
+Lista de todos os chassis (ID, Data Entrada, Dias de Pátio, Carência aplicada, Dias cobrados e Subtotal).
+
+Valor Total do mês.
+
+3. Estrutura de Dados sugerida:
+
+Crie ou atualize a tabela faturas_mensais com: id_cliente, mes_referencia, ano_referencia, valor_total, status (default: pendente), data_pagamento.
+
+4. Interface:
+
+Use uma tabela limpa com badges coloridos para os status.
+
+Garanta que eu possa filtrar meses anteriores para ver o histórico de pagamentos.
+
+Por favor, comece estruturando as alterações no banco de dados e depois crie a lógica de cálculo e a interface."

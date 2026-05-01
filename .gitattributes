@@ -1,0 +1,4 @@
+.local/state/replit/log-query.db filter=lfs diff=lfs merge=lfs -text
+backups/backup_full_2026-04-12T03-58-04-073Z_6e5fd67e.tar.gz filter=lfs diff=lfs merge=lfs -text
+backups/backup_full_2026-04-15T23-57-16-166Z_b6b3e883.tar.gz filter=lfs diff=lfs merge=lfs -text
+dumps/otd_logistics_20260422_021632.sql filter=lfs diff=lfs merge=lfs -text

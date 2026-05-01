@@ -1,0 +1,28 @@
+O sistema é para gestão de entregas de veículos novos. Meu cliente compra um novo caminhão zero km e me contrata para eu entregar o caminhão até o local de entrega sugerido por ele.
+Meu motorista busca os veículos novos direto nas montadoras chamando isso de uma COLETA, leva para um dos meus pátios. Depois crio um transporte e faço a entrega final para meu cliente nos locais de entregas. Pode acontecer movimentação entre pátios dos veículos. 
+
+Requisitos tecnicos
+Usar Node
+Usar para ORM drizzle
+Usar para rotas Express
+Usar para validação input/output utilizar ZOD
+
+
+AUTENTICAÇÃO
+
+Autenticação oauth
+
+OPERAÇÃO
+
+1.Transportes( Lista de transportes criados, exibir em formato lista os transportes criados, com os campos: Status, chassi, numero da solicitação(Criada automaticamente pelo sistema começando por OTD00001, cliente, cliente, local de entrega, data da criação do transporte, motorista, contato do motorista). Ao criar um transporte o usuário deve escolher o local de saída, data de entrega, o cliente e o local de entrega do cliente)
+2.Coletas(Criação de uma nova Coleta, que sera realizada pela web ou aplicativo, ao criar uma nova coleta o usuário vai preencher o chassi do veículo, origem(Cadastro de montadoras) e destino (Cadastro de pátio).
+3.Localizar Motorista (Ao clicar o usuário escolhe um pátio e seleciona um local de entrega e a data de saída, e o sistema envia uma notificação em push para todos os motoristas. O sistema deve receber o aceite do motorista e apresentar os dados do motorista que aceitou o transporte. O usuário deve poder selecionar um motorista e adicionar a um transporte.
+
+
+CADASTROS 
+
+Motoristas (Cadastro dos meus motoristas)
+Montadoras (Cadastro das montadoras onde eu retiro os veículos)
+Clientes(Informações do cliente e cadastros dos locais de entregas dos clientes)
+Patios (Cadastro de pátios da minha empresa, exemplo: Matriz, patio 1 em São Paulo etc)
+Estoque(Cadastro de veículo, a chave primária deve ser Chassi. O Estoque possui um cliente, data/hora coleta, data/hora entrada no patio com os status:Pre estoque, em estoque, despachado, entregue, retirado)

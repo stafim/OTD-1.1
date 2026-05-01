@@ -1,0 +1,165 @@
+
+> rest-express@1.0.0 dev
+> NODE_ENV=development node_modules/.bin/tsx server/index.ts
+
+[1G[0K3:52:09 PM [express] serving on port 5000
+Browserslist: browsers data (caniuse-lite) is 7 months old. Please run:
+  npx update-browserslist-db@latest
+  Why you should do it regularly: https://github.com/browserslist/update-db#readme
+
+A PostCSS plugin did not pass the `from` option to `postcss.parse`. This may cause imported assets to be incorrectly transformed. If you've recently added a PostCSS plugin that raised this warning, please contact the package author to fix the issue.
+3:52:15 PM [express] GET /api/vehicles 401 in 2ms :: {"message":"Token não fornecido"}
+3:52:19 PM [express] GET /api/damage-reports/new-count 401 in 0ms :: {"message":"Token não fornecido"}
+3:52:19 PM [express] GET /api/system-versions 200 in 27ms :: [{"id":"24bc39da-7501-4b8c-8b27-890dc8656e69","type":"web","version":"1.0.1","description":null,"deployDate":"2026-04-30T21:53:00.000Z","createdAt":"2026-04-30T21:53:10.157Z"}]
+3:52:19 PM [express] GET /api/dashboard/yard-stats 200 in 39ms :: {"yardStats":[{"id":"3ce38fd0-398c-46a2-932a-2d5789128fe2","name":"Patio OTD Matriz - São José dos Pinhais","city":"São José dos Pinhais","state":"PR","total":2,"statusBreakdown":[{"status":"entregue","label":"Entregue","count":1,"chassis":["cc00001"]},{"status":"em_estoque","label":"Em Estoque","count":1,"chassis":["xx00001"]}]}],"totals":{"totalYards":1,"totalVehicles":2,"em_estoque":1,"pre_estoque":0,"em_transferencia":0,"despachado":0}}
+3:52:19 PM [express] GET /api/dashboard/analytics 200 in 53ms :: {"transportsByStatus":{"pendente":1,"aguardando_saida":0,"em_transito":0,"entregue":1,"cancelado":0},"collectsByStatus":{"pendente":0,"em_transito":0,"entregue":0,"cancelado":0},"transportsByMonth":[{"name":"Dez.","transportes":0},{"name":"Jan.","transportes":0},{"name":"Fev.","transportes":0},{"name":"Mar.","transportes":0},{"name":"Abr.","transportes":2},{"name":"Mai.","transportes":0}],"collectsByMonth":[{"name":"Dez.","coletas":0},{"name":"Jan.","coletas":0},{"name":"Fev.","coletas":0},{"name":"Mar.","coletas":0},{"name":"Abr.","coletas":2},{"name":"Mai.","coletas":0}],"driverPerformance":[],"financials":{"totalExpenses":0,"approvedSettlements":1,"pendingSettlements":0,"totalSettlements":1},"metrics":{"totalTransports":2,"totalCollects":2,"totalDrivers":0,"totalVehicles":2,"vehiclesInStock":1,"totalDistanceKm":769,"avgDeliveryTimeHours":0,"deliveryRate":100,"onTimeDeliveries":1,"totalDeliveredWithDate":1}}
+3:52:20 PM [express] GET /api/dashboard/operation 200 in 20ms :: {"upcomingTransports":[],"noDriverTransports":[{"id":"e06f598a-83ae-4d3c-a2ae-6fef9dd02714","requestNumber":"OTD00002","status":"pendente","scheduledDeparture":null,"vehicleChassi":"xx00001","vehicleModel":null,"vehicleBrand":null,"originYardName":"Patio OTD Matriz - São José dos Pinhais","clientName":"Maggi Volvo Sorocaba","deliveryLocationName":"Maggi Piracicaba","createdAt":"2026-04-30T23:37:28.877Z"}],"stats":{"totalActive":1,"totalUpcoming":0,"totalNoDriver":1,"totalInTransit":0,"totalPending":1,"totalAwaitingDeparture":0}}
+3:52:20 PM [express] GET /api/indicadores 200 in 9ms :: {"summary":{"totalDelivered":1,"totalTransports":2,"otdRate":100,"damageFreeRate":0,"otifRate":0,"avgLeadTimeHours":0.2,"onTimeCount":1,"lateCount":0,"damageFreeCount":0,"withDamageCount":1,"otifCount":0,"collectsTotal":2,"collectsWithDamage":0,"insufficientDataCount":0},"monthlyTrend":[{"name":"Abr","otd":100,"damageFree":0,"otif":0,"leadTime":0.2,"total":1}]}
+3:53:25 PM [express] GET /api/auth/client-me 304 in 15ms :: {"id":"7b579647-5427-4994-b666-a8ff38d8c00b","name":"Maggi Volvo Sorocaba","username":"maggi","email":"volvo@sorocaba.com.br","phone":"41564456465","city":"Sorocaba","state":"SP"}
+3:53:25 PM [express] GET /api/collects 304 in 34ms :: [{"id":"1df4efac-5ed4-4073-9651-218e10486f81","vehicleChassi":"xx00001","manufacturerId":"c5f82e34-8dc3-4555-930f-d5e0bc010862","originYardId":null,"yardId":"3ce38fd0-398c-46a2-932a-2d5789128fe2","driverId":"38ef00ba-0d7d-4e18-99a3-f52592fbada8","collectType":"coleta","status":"finalizada","collectDate":"2026-04-30T23:35:17.600Z","notes":null,"startLatitude":"-25.5278665","startLongitude":"-49.2047189","endLatitude":"-25.5278642","endLongitude":"-49.2047155","latitude":null,"longitude":null,"checkinDateTime":null,"checkinLocation":null,"checkinFrontalPhoto":null,"checkinLateral1Photo":null,"checkinLateral2Photo":null,"checkinTraseiraPhoto":null,"checkinOdometerPhoto":null,"checkinFuelLevelPhoto":null,"checkinDamagePhotos":null,"checkinSelfiePhoto":null,"checkinNotes":null,"checkoutDateTime":"2026-04-30T23:35:25.710Z","checkoutLocation":null,"checkoutApprovedById":null,"checkoutFrontalPhoto":null,"checkoutLateral1Photo":null,"checkoutLateral2Photo":null,"checkoutTraseiraPhoto":null,"checkoutOdometerPhoto":null,"checkoutFuelLevelPhoto":null,"checkoutDamagePhotos":null,"checkoutSelfiePhoto":null,"checkoutNotes":null,"createdAt":"2026-04-30T23:35:17.600Z","manufacturer":{"id":"c5f82e34-8dc3-4555-930f-d5e0bc010862","name":"Volvo do Brasil","cep":"","address":"Cidade Industrial de Curitiba","addressNumber":"","complement":"","neighborhood":"Curitiba - State of Paraná","city":"81020-490","state":null,"latitude":"-25.520374","longitude":"-49.33349","phone":"41992392227","email":"volvo9@curitibavolcom.com.br","contactName":"","isActive":"true","createdAt":"2026-04-30T21:48:25.283Z"},"originYard":null,"yard":{"id":"3ce38fd0-398c-46a2-932a-2d5789128fe2","name":"Patio OTD Matriz - São José dos Pinhais","cep":"83091002","address":"R. Antônio Singer","addressNumber":"2682","complement":"100","neighborhood":"Cachoeira de São José","city":"São José dos Pinhais","state":"PR","latitude":"-25.6359195","longitude":"-49.181644399999996","phone":"(41) 99239-2221","maxVehicles":300,"isActive":"true","createdAt":"2026-04-30T16:43:11.257Z"},"driver":{"id":"38ef00ba-0d7d-4e18-99a3-f52592fbada8","name":"ricardo stafim","cpf":"05458000994","rg":"","cnpj":"","companyName":"","phone":"41992392227","email":"stafim2@gmail.com","birthDate":"1987-02-01","cep":"83035180","address":"Travessa Venezuela","addressNumber":"197","complement":"Casa","neighborhood":"Cidade Jardim","city":"São José dos Pinhais","state":"PR","latitude":null,"longitude":null,"driverType":"transporte","modality":null,"cnhType":"C","cnhFrontPhoto":"/uploads/e41b4bc0-7783-4478-8c9a-a44619b3acc6.jpg","cnhBackPhoto":"/uploads/707aa9fb-31de-44ad-82d0-6f17629a3ec1.jpg","rgPhoto":"/uploads/55fdb260-fa8b-4f16-9d70-75b9fb9b5d18.jpg","addressProofPhoto":"/uploads/9de4f859-cb11-44bf-b31d-efe739431ead.jpg","profilePhoto":"/uploads/f294a304-77fa-4cda-a59d-d23ab9c80866.jpg","isApto":"true","isActive":"true","documentsApproved":"pendente","documentsApprovedAt":null,"documentsApprovedBy":null,"freightContractId":null,"registrationSource":"app","deviceToken":"eI2JxvXTQHa5OI0G1CFsja:APA91bHe1W_niDZAYAu6WZxPWwrj_s8-XPrj5RSq9TQwqYDNb-6U2-YYrMQUy2IVRq4yAJ3hiHiR03OCgwQCspxSjluwSLwNuGn08B8UrGi59h8iRxYe1Mo","collectType":"coleta","createdAt":"2026-04-30T17:18:38.471Z"},"checkoutApprovedBy":null,"vehicle":{"chassi":"xx00001","clientId":"7b579647-5427-4994-b666-a8ff38d8c00b","yardId":"3ce38fd0-398c-46a2-932a-2d5789128fe2","manufacturerId":"c5f82e34-8dc3-4555-930f-d5e0bc010862","color":"","status":"em_estoque","collectDateTime":null,"yardEntryDateTime":"2026-04-30T23:35:25.715Z","dispatchDateTime":null,"deliveryDateTime":null,"notes":"","createdAt":"2026-04-30T23:35:17.595Z"}}]
+3:53:27 PM [express] GET /api/vehicles 200 in 4ms :: [{"chassi":"xx00001","clientId":"7b579647-5427-4994-b666-a8ff38d8c00b","yardId":"3ce38fd0-398c-46a2-932a-2d5789128fe2","manufacturerId":"c5f82e34-8dc3-4555-930f-d5e0bc010862","color":"","status":"em_estoque","collectDateTime":null,"yardEntryDateTime":"2026-04-30T23:35:25.715Z","dispatchDateTime":null,"deliveryDateTime":null,"notes":"","createdAt":"2026-04-30T23:35:17.595Z","yardName":"Patio OTD Matriz - São José dos Pinhais"},{"chassi":"cc00001","clientId":null,"yardId":"3ce38fd0-398c-46a2-932a-2d5789128fe2","manufacturerId":"c5f82e34-8dc3-4555-930f-d5e0bc010862","color":null,"status":"entregue","collectDateTime":null,"yardEntryDateTime":"2026-04-30T21:50:44.016Z","dispatchDateTime":null,"deliveryDateTime":null,"notes":null,"createdAt":"2026-04-30T21:48:54.476Z","yardName":"Patio OTD Matriz - São José dos Pinhais"}]
+3:53:32 PM [express] GET /api/vehicle-journey/cc00001 200 in 14ms :: {"vehicle":{"chassi":"cc00001","clientId":null,"yardId":"3ce38fd0-398c-46a2-932a-2d5789128fe2","manufacturerId":"c5f82e34-8dc3-4555-930f-d5e0bc010862","color":null,"status":"entregue","collectDateTime":null,"yardEntryDateTime":"2026-04-30T21:50:44.016Z","dispatchDateTime":null,"deliveryDateTime":null,"notes":null,"createdAt":"2026-04-30T21:48:54.476Z","manufacturer":{"id":"c5f82e34-8dc3-4555-930f-d5e0bc010862","name":"Volvo do Brasil","cep":"","address":"Cidade Industrial de Curitiba","addressNumber":"","complement":"","neighborhood":"Curitiba - State of Paraná","city":"81020-490","state":null,"latitude":"-25.520374","longitude":"-49.33349","phone":"41992392227","email":"volvo9@curitibavolcom.com.br","contactName":"","isActive":"true","createdAt":"2026-04-30T21:48:25.283Z"},"yard":{"id":"3ce38fd0-398c-46a2-932a-2d5789128fe2","name":"Patio OTD Matriz - São José dos Pinhais","cep":"83091002","address":"R. Antônio Singer","addressNumber":"2682","complement":"100","neighborhood":"Cachoeira de São José","city":"São José dos Pinhais","state":"PR","latitude":"-25.6359195","longitude":"-49.181644399999996","phone":"(41) 99239-2221","maxVehicles":300,"isActive":"true","createdAt":"2026-04-30T16:43:11.257Z"},"client":null},"collects":[{"id":"2c7bcf56-4390-4347-a6dc-0b28bf4522c9","vehicleChassi":"cc00001","manufacturerId":"c5f82e34-8dc3-4555-930f-d5e0bc010862","originYardId":null,"yardId":"3ce38fd0-398c-46a2-932a-2d5789128fe2","driverId":"38ef00ba-0d7d-4e18-99a3-f52592fbada8","collectType":"coleta","status":"finalizada","collectDate":"2026-04-30T21:48:54.481Z","notes":null,"startLatitude":"-25.5278625","startLongitude":"-49.2046871","endLatitude":"-25.5278609","endLongitude":"-49.2047084","latitude":null,"longitude":null,"checkinDateTime":null,"checkinLocation":null,"checkinFrontalPhoto":null,"checkinLateral1Photo":null,"checkinLateral2Photo":null,"checkinTraseiraPhoto":null,"checkinOdometerPhoto":null,"checkinFuelLevelPhoto":null,"checkinDamagePhotos":null,"checkinSelfiePhoto":null,"checkinNotes":null,"checkoutDateTime":"2026-04-30T21:50:44.047Z","checkoutLocation":null,"checkoutApprovedById":"ee206f3c-ed62-4616-8bdd-f35b8f803ac4","checkoutFrontalPhoto":null,"checkoutLateral1Photo":null,"checkoutLateral2Photo":null,"checkoutTraseiraPhoto":null,"checkoutOdometerPhoto":null,"checkoutFuelLevelPhoto":null,"checkoutDamagePhotos":null,"checkoutSelfiePhoto":null,"checkoutNotes":null,"createdAt":"2026-04-30T21:48:54.482Z","manufacturer":{"id":"c5f82e34-8dc3-4555-930f-d5e0bc010862","name":"Volvo do Brasil","cep":"","address":"Cidade Industrial de Curitiba","addressNumber":"","complement":"","neighborhood":"Curitiba - State of Paraná","city":"81020-490","state":null,"latitude":"-25.520374","longitude":"-49.33349","phone":"41992392227","email":"volvo9@curitibavolcom.com.br","contactName":"","isActive":"true","createdAt":"2026-04-30T21:48:25.283Z"},"yard":{"id":"3ce38fd0-398c-46a2-932a-2d5789128fe2","name":"Patio OTD Matriz - São José dos Pinhais","cep":"83091002","address":"R. Antônio Singer","addressNumber":"2682","complement":"100","neighborhood":"Cachoeira de São José","city":"São José dos Pinhais","state":"PR","latitude":"-25.6359195","longitude":"-49.181644399999996","phone":"(41) 99239-2221","maxVehicles":300,"isActive":"true","createdAt":"2026-04-30T16:43:11.257Z"},"driver":{"id":"38ef00ba-0d7d-4e18-99a3-f52592fbada8","name":"ricardo stafim","cpf":"05458000994","rg":"","cnpj":"","companyName":"","phone":"41992392227","email":"stafim2@gmail.com","birthDate":"1987-02-01","cep":"83035180","address":"Travessa Venezuela","addressNumber":"197","complement":"Casa","neighborhood":"Cidade Jardim","city":"São José dos Pinhais","state":"PR","latitude":null,"longitude":null,"driverType":"transporte","modality":null,"cnhType":"C","cnhFrontPhoto":"/uploads/e41b4bc0-7783-4478-8c9a-a44619b3acc6.jpg","cnhBackPhoto":"/uploads/707aa9fb-31de-44ad-82d0-6f17629a3ec1.jpg","rgPhoto":"/uploads/55fdb260-fa8b-4f16-9d70-75b9fb9b5d18.jpg","addressProofPhoto":"/uploads/9de4f859-cb11-44bf-b31d-efe739431ead.jpg","profilePhoto":"/uploads/f294a304-77fa-4cda-a59d-d23ab9c80866.jpg","isApto":"true","isActive":"true","documentsApproved":"pendente","documentsApprovedAt":null,"documentsApprovedBy":null,"freightContractId":null,"registrationSource":"app","deviceToken":"eI2JxvXTQHa5OI0G1CFsja:APA91bHe1W_niDZAYAu6WZxPWwrj_s8-XPrj5RSq9TQwqYDNb-6U2-YYrMQUy2IVRq4yAJ3hiHiR03OCgwQCspxSjluwSLwNuGn08B8UrGi59h8iRxYe1Mo","collectType":"coleta","createdAt":"2026-04-30T17:18:38.471Z"},"checkoutApprovedBy":{"firstName":"Administrador","lastName":"Sistema","username":"admin"}}],"transports":[{"id":"671c9202-c1a3-43cc-9c8e-bd9aa8211345","requestNumber":"OTD00001","vehicleChassi":"cc00001","clientId":"7b579647-5427-4994-b666-a8ff38d8c00b","originYardId":"3ce38fd0-398c-46a2-932a-2d5789128fe2","deliveryLocationId":"931c6cd0-c278-4156-978f-d67b2f23c84d","driverId":"38ef00ba-0d7d-4e18-99a3-f52592fbada8","travelRateId":null,"status":"entregue","deliveryDate":"2026-05-02T18:00:00.000Z","scheduledDeparture":null,"notes":null,"documents":null,"createdAt":"2026-04-30T22:28:02.858Z","createdByUserId":"ee206f3c-ed62-4616-8bdd-f35b8f803ac4","driverAssignedByUserId":"ee206f3c-ed62-4616-8bdd-f35b8f803ac4","driverAssignedAt":"2026-04-30T22:33:42.042Z","transitStartedAt":"2026-04-30T22:41:01.121Z","checkinDateTime":"2026-04-30T22:39:15.861Z","checkinLocation":{"type":"Point","coordinates":[-49.2047203,-25.5278724]},"checkinFrontalPhoto":"/uploads/826b2039-c6fe-4ce2-b7af-2def4f408b02.webp","checkinLateral1Photo":"/uploads/672fe046-7487-4923-8eae-79e4b4297b26.webp","checkinLateral2Photo":"/uploads/514c6048-c767-40bc-a043-2e4d3cb85cb9.webp","checkinTraseiraPhoto":"/uploads/74e37cf8-de43-4cb6-8e74-ac0213097196.webp","checkinOdometerPhoto":"/uploads/ee09008f-ebce-4a80-94c7-e34028c8d7df.webp","checkinFuelLevelPhoto":"/uploads/8f00ce85-4d29-4a04-b3e0-e254a4dd1197.webp","checkinDamagePhotos":["/uploads/d1bba523-4c27-4b8d-a383-5c54ef31d640.webp"],"checkinInteriorPhotos":["/uploads/cd814056-f913-4d50-aa36-99d891dd36bc.webp"],"checkinSelfiePhoto":"/uploads/d25c754b-a243-4761-a856-8dcd0036c05a.jpg","checkinNotes":null,"checkoutDateTime":"2026-04-30T22:51:44.578Z","checkoutLocation":{"type":"Point","coordinates":[-49.2047252,-25.5278737]},"checkoutFrontalPhoto":"/uploads/88a71827-2469-4187-a9c1-709d0b5af29e.jpg","checkoutLateral1Photo":"/uploads/0238fff2-8cd1-424c-8ff0-67e0ea0a3c29.jpg","checkoutLateral2Photo":"/uploads/af5e4aba-d7fd-4a68-8d6f-2e00696b0744.jpg","checkoutTraseiraPhoto":"/uploads/debf16d0-bd1b-4bf4-b273-faa3bacb4798.jpg","checkoutOdometerPhoto":"/uploads/d9a1cd85-5d12-4dac-b193-5f74fadfeede.jpg","checkoutFuelLevelPhoto":"/uploads/5126adf5-8962-477b-850e-01635b6fc142.jpg","checkoutDamagePhotos":["/uploads/7dfda503-9420-44eb-895f-a46017079fad.jpg"],"checkoutInteriorPhotos":["/uploads/3182ae40-7ade-4724-9193-870afbf88516.jpg"],"checkoutSelfiePhoto":"/uploads/1a859452-caf3-42a5-8656-a75be5c660cc.jpg","checkoutNotes":null,"routeDistanceKm":"384.25","routeDurationMinutes":343,"estimatedTolls":"17.20","estimatedFuel":"624.40","travelRateApprovalStatus":null,"travelRateApprovedBy":null,"travelRateApprovedAt":null,"travelRateApprovalNote":null,"originYard":{"id":"3ce38fd0-398c-46a2-932a-2d5789128fe2","name":"Patio OTD Matriz - São José dos Pinhais","cep":"83091002","address":"R. Antônio Singer","addressNumber":"2682","complement":"100","neighborhood":"Cachoeira de São José","city":"São José dos Pinhais","state":"PR","latitude":"-25.6359195","longitude":"-49.181644399999996","phone":"(41) 99239-2221","maxVehicles":300,"isActive":"true","createdAt":"2026-04-30T16:43:11.257Z"},"deliveryLocation":{"id":"931c6cd0-c278-4156-978f-d67b2f23c84d","clientId":"7b579647-5427-4994-b666-a8ff38d8c00b","name":"Maggi Piracicaba","cnpj":"26.041.046/0001-42","cep":"18040000","address":"Av. Dr. Afonso Vergueiro","addressNumber":"3090","complement":"Casa","neighborhood":"Vila Lucy","city":"Sorocaba","state":"SP","country":"Brasil","latitude":"-23.5014729","longitude":"-47.47909310000001","responsibleName":"Marcel","responsiblePhone":"4199239212","emails":["maggi.volvo@gmail.com"],"isActive":"true","createdAt":"2026-04-30T22:25:41.663Z"},"driver":{"id":"38ef00ba-0d7d-4e18-99a3-f52592fbada8","name":"ricardo stafim","cpf":"05458000994","rg":"","cnpj":"","companyName":"","phone":"41992392227","email":"stafim2@gmail.com","birthDate":"1987-02-01","cep":"83035180","address":"Travessa Venezuela","addressNumber":"197","complement":"Casa","neighborhood":"Cidade Jardim","city":"São José dos Pinhais","state":"PR","latitude":null,"longitude":null,"driverType":"transporte","modality":null,"cnhType":"C","cnhFrontPhoto":"/uploads/e41b4bc0-7783-4478-8c9a-a44619b3acc6.jpg","cnhBackPhoto":"/uploads/707aa9fb-31de-44ad-82d0-6f17629a3ec1.jpg","rgPhoto":"/uploads/55fdb260-fa8b-4f16-9d70-75b9fb9b5d18.jpg","addressProofPhoto":"/uploads/9de4f859-cb11-44bf-b31d-efe739431ead.jpg","profilePhoto":"/uploads/f294a304-77fa-4cda-a59d-d23ab9c80866.jpg","isApto":"true","isActive":"true","documentsApproved":"pendente","documentsApprovedAt":null,"documentsApprovedBy":null,"freightContractId":null,"registrationSource":"app","deviceToken":"eI2JxvXTQHa5OI0G1CFsja:APA91bHe1W_niDZAYAu6WZxPWwrj_s8-XPrj5RSq9TQwqYDNb-6U2-YYrMQUy2IVRq4yAJ3hiHiR03OCgwQCspxSjluwSLwNuGn08B8UrGi59h8iRxYe1Mo","collectType":"coleta","createdAt":"2026-04-30T17:18:38.471Z"},"client":{"id":"7b579647-5427-4994-b666-a8ff38d8c00b","name":"Maggi Volvo Sorocaba","cnpj":"564456456465465","cep":"18040000","address":"Av. Dr. Afonso Vergueiro","addressNumber":"3090","complement":"","neighborhood":"Vila Lucy","city":"Sorocaba","state":"SP","latitude":"-23.5014729","longitude":"-47.47909310000001","phone":"41564456465","email":"volvo@sorocaba.com.br","contactName":"Volvino da Silva","dailyCost":"20.00","yardGraceDays":0,"username":"maggi","password":"$2b$10$OrCnBo12VizR7vL5oh73AelSoH9h8SRfT0rnZ.v7RXoqhY89HSz96","isActive":"true","createdAt":"2026-04-30T17:03:46.780Z"}}],"transfers":[]}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+[1;1H[0J[2m3:57:03 PM[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/pages/jornada-veiculo/index.tsx, /src/index.css[22m
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+[1;1H[0J[2m3:57:14 PM[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/pages/jornada-veiculo/index.tsx, /src/index.css[22m [33m(x2)[39m
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+[1;1H[0J[2m3:57:23 PM[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/pages/jornada-veiculo/index.tsx, /src/index.css[22m [33m(x3)[39m
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+[1;1H[0J[2m3:57:31 PM[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/pages/jornada-veiculo/index.tsx, /src/index.css[22m [33m(x4)[39m
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+[1;1H[0J[2m3:57:40 PM[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/pages/jornada-veiculo/index.tsx, /src/index.css[22m [33m(x5)[39m
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+[1;1H[0J[2m3:57:51 PM[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/pages/jornada-veiculo/index.tsx, /src/index.css[22m [33m(x6)[39m
