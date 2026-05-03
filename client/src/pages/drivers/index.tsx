@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Plus, Search, Pencil, Trash2, Eye, BarChart2, FolderOpen, FileX, Smartphone, Monitor } from "lucide-react";
+import { SiWhatsapp } from "react-icons/si";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import type { Driver, Contract } from "@shared/schema";
@@ -110,7 +111,46 @@ export default function DriversPage() {
   const columns = [
     { key: "name", label: "Nome" },
     { key: "cpf", label: "CPF" },
-    { key: "phone", label: "Telefone" },
+    {
+      key: "phone",
+      label: "Telefone",
+      render: (driver: Driver) => {
+        const raw = (driver.phone || "").trim();
+        const digits = raw.replace(/\D/g, "");
+        // If the original input started with "+", treat as already-international E.164.
+        // Otherwise (typical BR-local format like "(11) 91234-5678"), assume BR and prefix 55 when missing.
+        const isInternational = raw.startsWith("+");
+        let waNumber = digits;
+        if (!isInternational) {
+          // BR mobile: 10 (landline) or 11 (mobile) digits without DDI
+          if ((digits.length === 10 || digits.length === 11) && !digits.startsWith("55")) {
+            waNumber = `55${digits}`;
+          }
+        }
+        // Validate length for E.164: WhatsApp needs at least 10 digits, max 15
+        const isValid = waNumber.length >= 10 && waNumber.length <= 15;
+        const waUrl = `https://wa.me/${waNumber}`;
+        return (
+          <div className="flex items-center gap-2">
+            <span data-testid={`text-phone-${driver.id}`}>{driver.phone}</span>
+            {isValid && (
+              <a
+                href={waUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                onClick={(e) => e.stopPropagation()}
+                title="Abrir conversa no WhatsApp"
+                aria-label={`Abrir conversa no WhatsApp com ${driver.name}`}
+                className="inline-flex h-6 w-6 items-center justify-center rounded-full text-[#25D366] hover:bg-[#25D366]/10 transition-colors"
+                data-testid={`link-whatsapp-${driver.id}`}
+              >
+                <SiWhatsapp className="h-4 w-4" aria-hidden="true" />
+              </a>
+            )}
+          </div>
+        );
+      },
+    },
     {
       key: "modality",
       label: "Modalidade",

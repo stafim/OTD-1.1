@@ -292,58 +292,74 @@ export function AddressAutocomplete({
         latitude: data.lat,
         longitude: data.lng,
       };
-      
-      // Parse the address from the formatted string
+
+      // Prefer structured addressComponents from Google Places API (most reliable)
+      const components: Array<{ longText?: string; shortText?: string; types?: string[] }> =
+        Array.isArray(data.addressComponents) ? data.addressComponents : [];
+
+      if (components.length > 0) {
+        for (const comp of components) {
+          const types = comp.types || [];
+          const longText = comp.longText || "";
+          const shortText = comp.shortText || longText;
+          if (types.includes("street_number")) addressData.addressNumber = longText;
+          else if (types.includes("route")) addressData.address = longText;
+          else if (types.includes("sublocality_level_1") || types.includes("sublocality")) addressData.neighborhood = longText;
+          else if (types.includes("locality") || types.includes("administrative_area_level_2")) {
+            if (!addressData.city) addressData.city = longText;
+          }
+          else if (types.includes("administrative_area_level_1")) addressData.state = shortText;
+          else if (types.includes("postal_code")) addressData.cep = longText.replace(/\D/g, "");
+        }
+      }
+
+      // Fallback: parse the formatted address string by detecting patterns (not by position)
       // Examples: 
       // "R. Antônio Singer, 2682 - Campina do Taquaral, São José dos Pinhais - PR, 83091-002, Brazil"
       // "BR-153, s/n - Retiro do Bosque, Aparecida de Goiânia - GO, 74990-728, Brazil"
-      if (data.address) {
-        const parts = data.address.split(",").map((p: string) => p.trim());
-        
-        // First part is the street name (keep it complete, including highway numbers like BR-153)
-        if (parts.length > 0) {
+      if ((!addressData.city || !addressData.state || !addressData.cep) && data.address) {
+        const parts: string[] = data.address.split(",").map((p: string) => p.trim()).filter(Boolean);
+        const cepRegex = /^(\d{5}-?\d{3})$/;
+        const cityStateRegex = /^(.+?)\s*-\s*([A-Z]{2})$/;
+
+        // Identify CEP by pattern (anywhere in the parts)
+        if (!addressData.cep) {
+          for (const p of parts) {
+            const m = p.match(cepRegex);
+            if (m) { addressData.cep = m[1].replace("-", ""); break; }
+          }
+        }
+
+        // Identify "City - STATE" by pattern (anywhere in the parts)
+        if (!addressData.city || !addressData.state) {
+          for (const p of parts) {
+            const m = p.match(cityStateRegex);
+            if (m) {
+              if (!addressData.city) addressData.city = m[1].trim();
+              if (!addressData.state) addressData.state = m[2];
+              break;
+            }
+          }
+        }
+
+        // First part is the street name (only if not already set via components)
+        if (!addressData.address && parts.length > 0) {
           addressData.address = parts[0];
         }
-        
+
         // Second part may be "Number - Neighborhood", "s/n - Neighborhood", just "Number", or just "Neighborhood"
-        if (parts.length > 1) {
+        if ((!addressData.addressNumber || !addressData.neighborhood) && parts.length > 1) {
           const secondPart = parts[1];
-          // Match patterns like "2682 - Campina do Taquaral" or "s/n - Retiro do Bosque"
           const numberNeighborhoodMatch = secondPart.match(/^(\d+|s\/n)\s*-\s*(.+)$/i);
           if (numberNeighborhoodMatch) {
-            addressData.addressNumber = numberNeighborhoodMatch[1];
-            addressData.neighborhood = numberNeighborhoodMatch[2];
+            if (!addressData.addressNumber) addressData.addressNumber = numberNeighborhoodMatch[1];
+            if (!addressData.neighborhood) addressData.neighborhood = numberNeighborhoodMatch[2];
           } else if (/^\d+$/.test(secondPart)) {
-            // Just a number
-            addressData.addressNumber = secondPart;
+            if (!addressData.addressNumber) addressData.addressNumber = secondPart;
           } else if (/^s\/n$/i.test(secondPart)) {
-            // Just "s/n" (sem número)
-            addressData.addressNumber = "s/n";
-          } else {
-            // It's the neighborhood
-            addressData.neighborhood = secondPart;
-          }
-        }
-        
-        // Third part is usually "City - State"
-        if (parts.length > 2) {
-          const cityStatePart = parts[2];
-          const cityStateMatch = cityStatePart.match(/^(.+?)\s*-\s*([A-Z]{2})$/);
-          if (cityStateMatch) {
-            addressData.city = cityStateMatch[1].trim();
-            addressData.state = cityStateMatch[2];
-          } else {
-            addressData.city = cityStatePart;
-          }
-        }
-        
-        // Fourth part is usually the CEP
-        if (parts.length > 3) {
-          const cepPart = parts[3];
-          // Check if it's a CEP (format: XXXXX-XXX or XXXXXXXX)
-          const cepMatch = cepPart.match(/^(\d{5}-?\d{3})$/);
-          if (cepMatch) {
-            addressData.cep = cepMatch[1].replace("-", "");
+            if (!addressData.addressNumber) addressData.addressNumber = "s/n";
+          } else if (!cepRegex.test(secondPart) && !cityStateRegex.test(secondPart) && secondPart.toLowerCase() !== "brazil" && secondPart.toLowerCase() !== "brasil") {
+            if (!addressData.neighborhood) addressData.neighborhood = secondPart;
           }
         }
       }

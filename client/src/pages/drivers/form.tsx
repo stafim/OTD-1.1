@@ -652,8 +652,18 @@ export default function DriverFormPage() {
                         <FormItem>
                           <FormLabel className="flex items-center gap-1.5"><Mail className="h-3.5 w-3.5 text-muted-foreground" />Email</FormLabel>
                           <FormControl>
-                            <Input type="email" {...field} data-testid="input-driver-email" />
+                            <Input
+                              type="email"
+                              {...field}
+                              readOnly={!!isEditing}
+                              disabled={!!isEditing}
+                              className={isEditing ? "bg-muted cursor-not-allowed" : undefined}
+                              data-testid="input-driver-email"
+                            />
                           </FormControl>
+                          {isEditing && (
+                            <p className="text-xs text-muted-foreground">O e-mail não pode ser alterado após o cadastro.</p>
+                          )}
                           <FormMessage />
                         </FormItem>
                       )}

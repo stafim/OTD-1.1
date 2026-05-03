@@ -28,8 +28,18 @@ async function gql(query: string, variables: Record<string, any> = {}) {
     },
     body: JSON.stringify({ query, variables }),
   });
-  const json: any = await res.json();
-  if (json.errors) throw new Error(json.errors[0].message);
+  const text = await res.text();
+  let json: any;
+  try { json = JSON.parse(text); } catch { json = null; }
+  if (!json) {
+    throw new Error(`Autentique HTTP ${res.status}: ${text.substring(0, 300)}`);
+  }
+  if (json.errors) {
+    const msg = json.errors.map((e: any) => e.message).join("; ");
+    const debug = JSON.stringify(json.errors).substring(0, 500);
+    console.error("[Autentique] GraphQL errors:", debug);
+    throw new Error(`Autentique: ${msg}`);
+  }
   return json.data;
 }
 
@@ -50,8 +60,32 @@ async function gqlMultipart(query: string, variables: Record<string, any>, fileK
     },
     body: form,
   });
-  const json: any = await res.json();
-  if (json.errors) throw new Error(json.errors[0].message);
+  const text = await res.text();
+  let json: any;
+  try { json = JSON.parse(text); } catch { json = null; }
+  if (!json) {
+    throw new Error(`Autentique HTTP ${res.status}: ${text.substring(0, 300)}`);
+  }
+  if (json.errors) {
+    const extractDetails = (e: any): string[] => {
+      const out: string[] = [];
+      const v = e?.extensions?.validation;
+      if (v && typeof v === "object") {
+        for (const key of Object.keys(v)) {
+          const arr = v[key];
+          if (Array.isArray(arr)) out.push(...arr.map((m: string) => `${key}: ${m}`));
+        }
+      }
+      return out;
+    };
+    const flatDetails = json.errors.flatMap(extractDetails);
+    const baseMsgs = json.errors.map((e: any) => e.message);
+    const msg = [...baseMsgs, ...flatDetails].join("; ");
+    const debug = JSON.stringify(json.errors).substring(0, 1500);
+    console.error("[Autentique] GraphQL errors (multipart):", debug);
+    console.error("[Autentique] file size:", fileBuffer.length, "bytes, mimeType:", mimeType);
+    throw new Error(`Autentique: ${msg}`);
+  }
   return json.data;
 }
 
@@ -179,12 +213,23 @@ export async function deleteDocument(docId: string) {
 }
 
 export async function resendSignatures(docId: string) {
+  const docData: any = await getDocument(docId);
+  const signatures = docData?.document?.signatures || [];
+  const pendingPublicIds: string[] = signatures
+    .filter((s: any) => !s.signed && !s.rejected)
+    .map((s: any) => s.public_id)
+    .filter(Boolean);
+
+  if (pendingPublicIds.length === 0) {
+    throw new Error("Não há assinaturas pendentes para reenviar");
+  }
+
   const query = `
-    mutation resendSignatures($document_id: UUID!) {
-      resendSignatures(document_id: $document_id)
+    mutation resendSignatures($public_ids: [UUID!]!) {
+      resendSignatures(public_ids: $public_ids)
     }
   `;
-  return gql(query, { document_id: docId });
+  return gql(query, { public_ids: pendingPublicIds });
 }
 
 export function getDocumentStatus(doc: { signatures_count: number; signed_count: number; rejected_count: number }) {

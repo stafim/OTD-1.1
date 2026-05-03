@@ -496,8 +496,19 @@ export function DriverFormDialog({ open, onOpenChange, driverId }: DriverFormDia
                               Email
                             </FormLabel>
                             <FormControl>
-                              <Input type="email" {...field} placeholder="email@exemplo.com" data-testid="input-driver-email" />
+                              <Input
+                                type="email"
+                                {...field}
+                                placeholder="email@exemplo.com"
+                                readOnly={isEditing}
+                                disabled={isEditing}
+                                className={isEditing ? "bg-muted cursor-not-allowed" : undefined}
+                                data-testid="input-driver-email"
+                              />
                             </FormControl>
+                            {isEditing && (
+                              <p className="text-xs text-muted-foreground">O e-mail não pode ser alterado após o cadastro.</p>
+                            )}
                             <FormMessage />
                           </FormItem>
                         )}

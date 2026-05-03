@@ -876,7 +876,9 @@ export const expenseSettlementStatusEnum = pgEnum("expense_settlement_status", [
   "enviado",         // Enviado pelo motorista, aguardando análise
   "devolvido",       // Devolvido para o motorista (foto ruim, etc)
   "aprovado",        // Aprovado pelo financeiro
-  "assinado"         // Assinado pelo motorista no app
+  "enviado_nfs",     // NFS/documento fiscal anexado à prestação de contas
+  "assinado",        // Assinado pelo motorista no app
+  "concluido"        // Concluída pelo financeiro após NFS recebida + assinatura (status final)
 ]);
 
 export const expenseTypeEnum = pgEnum("expense_type", [
@@ -904,7 +906,7 @@ export const expenseSettlements = pgTable("expense_settlements", {
   
   // Adiantamento e saldo
   advanceAmount: text("advance_amount"),  // Valor adiantado ao motorista
-  balanceAmount: text("balance_amount"),  // Saldo (despesas - adiantamento): positivo = a receber, negativo = a devolver
+  balanceAmount: text("balance_amount"),  // Saldo ((despesas + valor da rota) - adiantamento): positivo = a receber, negativo = a devolver
   
   // Valores do transporte (copiados para referência)
   routeDistance: text("route_distance"),
@@ -927,9 +929,21 @@ export const expenseSettlements = pgTable("expense_settlements", {
   // Documento gerado (URL do PDF)
   settlementDocumentUrl: text("settlement_document_url"),
   
+  // NFS enviada pelo motorista (imagem, PDF ou XML)
+  nfsFileUrl: text("nfs_file_url"),
+  nfsSentAt: timestamp("nfs_sent_at"),
+  
   // Assinatura do motorista (imagem base64 ou URL)
   driverSignature: text("driver_signature"),
-  
+
+  // Autentique - assinatura digital do PDF
+  autentiqueDocId: varchar("autentique_doc_id"),
+  autentiqueStatus: varchar("autentique_status", { length: 50 }), // pendente, assinado, parcialmente_assinado, recusado
+  autentiqueOriginalUrl: text("autentique_original_url"),
+  autentiqueSignedUrl: text("autentique_signed_url"),
+  autentiqueSentAt: timestamp("autentique_sent_at"),
+  autentiqueSignedAt: timestamp("autentique_signed_at"),
+
   createdAt: timestamp("created_at").defaultNow(),
 });
 

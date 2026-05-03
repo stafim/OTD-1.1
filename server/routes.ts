@@ -573,7 +573,7 @@ export async function registerRoutes(
 
       const checkAndSave = () => {
         const cpf = req.body?.cpf?.replace(/\D/g, "");
-        const email = req.body?.email?.trim();
+        const email = req.body?.email?.trim().toLowerCase();
 
         const checks: Promise<void>[] = [];
 
@@ -588,7 +588,12 @@ export async function registerRoutes(
         if (email && !req._emailChecked) {
           req._emailChecked = true;
           checks.push(
-            db.select({ id: users.id }).from(users).where(eq(users.email, email)).limit(1).then(([existing]) => {
+            db.select({ id: users.id }).from(users).where(drizzleSql`lower(${users.email}) = ${email}`).limit(1).then(([existing]) => {
+              if (existing) req._registrationError = { status: 409, message: "E-mail já cadastrado no sistema" };
+            })
+          );
+          checks.push(
+            db.select({ id: drivers.id }).from(drivers).where(drizzleSql`lower(${drivers.email}) = ${email}`).limit(1).then(([existing]) => {
               if (existing) req._registrationError = { status: 409, message: "E-mail já cadastrado no sistema" };
             })
           );
@@ -5086,7 +5091,7 @@ export async function registerRoutes(
       }
 
       // Using new Places API (v1)
-      const url = `https://places.googleapis.com/v1/places/${placeId}?fields=formattedAddress,location&key=${apiKey}`;
+      const url = `https://places.googleapis.com/v1/places/${placeId}?fields=formattedAddress,location,addressComponents&key=${apiKey}`;
       
       const response = await fetch(url, {
         headers: {
@@ -5100,6 +5105,7 @@ export async function registerRoutes(
           address: data.formattedAddress || '',
           lat: data.location.latitude,
           lng: data.location.longitude,
+          addressComponents: data.addressComponents || [],
         });
       }
 
@@ -5518,14 +5524,22 @@ export async function registerRoutes(
             ]);
           }
 
-          // Get advance amount from linked transport proposal
+          // Get advance amount and approximate value from linked transport proposal
           let proposalAdvanceAmount: string | null = null;
           let proposalAdvanceMethod: string | null = null;
+          let proposalApproximateValue: string | null = null;
           const [proposalItem] = await db.select().from(transportProposalItems).where(eq(transportProposalItems.transportId, settlement.transportId));
           if (proposalItem) {
             const [proposal] = await db.select().from(transportProposals).where(eq(transportProposals.id, proposalItem.proposalId));
             if (proposal?.advanceAmount) proposalAdvanceAmount = String(proposal.advanceAmount);
             if (proposal?.advanceMethod) proposalAdvanceMethod = proposal.advanceMethod;
+            // Compute approximate value (what driver earns) = distanceKm × travelRate.rateValue
+            if (proposal?.distanceKm && proposal?.travelRateId) {
+              const [rate] = await db.select({ rateValue: travelRates.rateValue }).from(travelRates).where(eq(travelRates.id, proposal.travelRateId)).limit(1);
+              if (rate) {
+                proposalApproximateValue = (Math.round(Number(proposal.distanceKm) * Number(rate.rateValue) * 100) / 100).toFixed(2);
+              }
+            }
           }
 
           // Get reviewer name
@@ -5568,6 +5582,7 @@ export async function registerRoutes(
             items,
             proposalAdvanceAmount,
             proposalAdvanceMethod,
+            proposalApproximateValue,
             reviewedByUserName,
             driverCost,
             travelRateInfo,
@@ -5617,14 +5632,22 @@ export async function registerRoutes(
         ]);
       }
 
-      // Get advance amount from linked transport proposal
+      // Get advance amount and approximate value from linked transport proposal
       let proposalAdvanceAmount: string | null = null;
       let proposalAdvanceMethod: string | null = null;
+      let proposalApproximateValue: string | null = null;
       const [proposalItem] = await db.select().from(transportProposalItems).where(eq(transportProposalItems.transportId, settlement.transportId));
       if (proposalItem) {
         const [proposal] = await db.select().from(transportProposals).where(eq(transportProposals.id, proposalItem.proposalId));
         if (proposal?.advanceAmount) proposalAdvanceAmount = String(proposal.advanceAmount);
         if (proposal?.advanceMethod) proposalAdvanceMethod = proposal.advanceMethod;
+        // Compute approximate value (what driver earns) = distanceKm × travelRate.rateValue
+        if (proposal?.distanceKm && proposal?.travelRateId) {
+          const [rate] = await db.select({ rateValue: travelRates.rateValue }).from(travelRates).where(eq(travelRates.id, proposal.travelRateId)).limit(1);
+          if (rate) {
+            proposalApproximateValue = (Math.round(Number(proposal.distanceKm) * Number(rate.rateValue) * 100) / 100).toFixed(2);
+          }
+        }
       }
 
       // Get reviewer name
@@ -5667,6 +5690,7 @@ export async function registerRoutes(
         items,
         proposalAdvanceAmount,
         proposalAdvanceMethod,
+        proposalApproximateValue,
         reviewedByUserName,
         driverCost,
         travelRateInfo,
@@ -5759,6 +5783,37 @@ export async function registerRoutes(
   });
 
   // Aprovar prestação de contas
+  // Concluir prestação de contas — só permitido quando a prestação está assinada
+  // pelo motorista E já tem a NFS recebida pelo backend.
+  app.post("/api/expense-settlements/:id/conclude", isAuthenticatedJWT, async (req: any, res) => {
+    try {
+      const existing = await storage.getExpenseSettlement(req.params.id);
+      if (!existing) {
+        return res.status(404).json({ message: "Prestação de contas não encontrada" });
+      }
+      if (existing.status === "concluido") {
+        return res.status(400).json({ message: "Prestação já está concluída" });
+      }
+      if (existing.status !== "assinado") {
+        return res.status(400).json({
+          message: `Só é possível concluir uma prestação assinada. Status atual: "${existing.status}".`,
+        });
+      }
+      if (!existing.nfsFileUrl) {
+        return res.status(400).json({
+          message: "Só é possível concluir após o recebimento da NFS.",
+        });
+      }
+      const settlement = await storage.updateExpenseSettlement(req.params.id, {
+        status: "concluido",
+      });
+      res.json(settlement);
+    } catch (error) {
+      console.error("Error concluding expense settlement:", error);
+      res.status(500).json({ message: "Falha ao concluir prestação" });
+    }
+  });
+
   app.post("/api/expense-settlements/:id/approve", isAuthenticatedJWT, async (req: any, res) => {
     try {
       const settlement = await storage.updateExpenseSettlement(req.params.id, {
@@ -5776,6 +5831,252 @@ export async function registerRoutes(
       res.status(500).json({ message: "Failed to approve expense settlement" });
     }
   });
+
+  // Enviar PDF da prestação para Autentique (assinatura digital pelo motorista)
+  // Body: { pdfBase64: string, filename?: string, message?: string }
+  app.post("/api/expense-settlements/:id/send-to-autentique", isAuthenticatedJWT, async (req: any, res) => {
+    try {
+      const { id } = req.params;
+      const { pdfBase64, filename, message } = req.body as { pdfBase64: string; filename?: string; message?: string };
+      if (!pdfBase64) {
+        return res.status(400).json({ message: "PDF não fornecido" });
+      }
+
+      const settlement = await storage.getExpenseSettlement(id);
+      if (!settlement) return res.status(404).json({ message: "Prestação não encontrada" });
+
+      // Resolve driver email
+      let driverEmail: string | null = null;
+      let driverName: string | null = null;
+      if ((settlement as any).driverId) {
+        const [drv] = await db.select().from(drivers).where(eq(drivers.id, (settlement as any).driverId));
+        driverEmail = drv?.email || null;
+        driverName = drv?.name || null;
+      }
+
+      // Sanitiza e valida e-mail e nome (Autentique exige campos válidos)
+      const cleanEmail = (driverEmail || "").trim().toLowerCase();
+      const cleanName = (driverName || "").trim().replace(/\s+/g, " ");
+      const emailRe = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!cleanEmail) {
+        return res.status(400).json({ message: "Motorista sem e-mail cadastrado" });
+      }
+      if (!emailRe.test(cleanEmail)) {
+        return res.status(400).json({ message: `E-mail do motorista inválido: ${cleanEmail}` });
+      }
+      if (!cleanName || cleanName.length < 2) {
+        return res.status(400).json({ message: "Nome do motorista inválido para envio ao Autentique" });
+      }
+
+      // Strip data URL prefix if present
+      const base64Data = pdfBase64.replace(/^data:application\/pdf;base64,/, "");
+      const pdfBuffer = Buffer.from(base64Data, "base64");
+
+      // Valida o PDF (header %PDF e tamanho mínimo/máximo)
+      if (pdfBuffer.length < 100) {
+        return res.status(400).json({ message: "Arquivo PDF inválido (vazio ou corrompido)" });
+      }
+      if (pdfBuffer.length > 45 * 1024 * 1024) {
+        return res.status(400).json({ message: "PDF excede o tamanho máximo permitido (45MB)" });
+      }
+      const headerOk = pdfBuffer.slice(0, 5).toString("ascii") === "%PDF-";
+      if (!headerOk) {
+        return res.status(400).json({ message: "Arquivo enviado não é um PDF válido" });
+      }
+
+      let otdNumber: string = id.substring(0, 8);
+      if ((settlement as any).transportId) {
+        const [trp] = await db.select().from(transports).where(eq(transports.id, (settlement as any).transportId));
+        if (trp?.requestNumber) otdNumber = trp.requestNumber;
+      }
+      const docName = `Prestação de Contas - ${otdNumber}`;
+      const fname = filename || `prestacao-contas-${otdNumber}.pdf`;
+
+      console.log("[send-to-autentique] enviando", {
+        settlementId: id,
+        otdNumber,
+        signer: { name: cleanName, email: cleanEmail },
+        pdfBytes: pdfBuffer.length,
+      });
+
+      const result = await autentique.createDocument({
+        name: docName,
+        signers: [{ name: cleanName, email: cleanEmail, action: "SIGN" }],
+        message: message || `Olá ${cleanName}, por favor assine sua prestação de contas referente à OTD ${otdNumber}.`,
+        pdfBuffer,
+        filename: fname,
+      });
+
+      const createdDoc = result.createDocument;
+      const computedStatus = autentique.getDocumentStatus(createdDoc);
+      const sentAt = new Date();
+
+      const updated = await storage.updateExpenseSettlement(id, {
+        autentiqueDocId: createdDoc.id,
+        autentiqueStatus: computedStatus,
+        autentiqueOriginalUrl: createdDoc.files?.original || null,
+        autentiqueSentAt: sentAt,
+      } as any);
+
+      res.json({
+        message: "Documento enviado ao Autentique com sucesso",
+        document: { ...createdDoc, computedStatus },
+        settlement: updated,
+      });
+    } catch (error: any) {
+      console.error("send-to-autentique error:", error);
+      res.status(500).json({ message: error.message || "Erro ao enviar documento ao Autentique" });
+    }
+  });
+
+  // Reenviar e-mail de assinatura via Autentique
+  app.post("/api/expense-settlements/:id/resend-autentique", isAuthenticatedJWT, async (req, res) => {
+    try {
+      const { id } = req.params;
+      const settlement = await storage.getExpenseSettlement(id);
+      if (!settlement) return res.status(404).json({ message: "Prestação não encontrada" });
+      const docId = (settlement as any).autentiqueDocId;
+      if (!docId) return res.status(400).json({ message: "Documento ainda não foi enviado ao Autentique" });
+
+      await autentique.resendSignatures(docId);
+      res.json({ message: "E-mail de assinatura reenviado com sucesso" });
+    } catch (error: any) {
+      console.error("resend-autentique error:", error);
+      res.status(500).json({ message: error.message || "Erro ao reenviar assinatura" });
+    }
+  });
+
+  // Sincronizar status da assinatura com Autentique (consulta única)
+  app.post("/api/expense-settlements/:id/sync-autentique", isAuthenticatedJWT, async (req, res) => {
+    try {
+      const { id } = req.params;
+      const settlement = await storage.getExpenseSettlement(id);
+      if (!settlement) return res.status(404).json({ message: "Prestação não encontrada" });
+      const docId = (settlement as any).autentiqueDocId;
+      if (!docId) return res.status(400).json({ message: "Documento ainda não foi enviado ao Autentique" });
+
+      const data = await autentique.getDocument(docId);
+      const doc = data.document;
+      const computedStatus = autentique.getDocumentStatus(doc);
+      const signedAt = doc.signatures?.find((s: any) => s.signed?.created_at)?.signed?.created_at;
+
+      const update: any = {
+        autentiqueStatus: computedStatus,
+        autentiqueSignedUrl: doc.files?.signed || null,
+      };
+      if (computedStatus === "assinado" && signedAt) {
+        update.autentiqueSignedAt = new Date(signedAt);
+        update.signedAt = new Date(signedAt);
+        update.status = "assinado";
+      }
+      const updated = await storage.updateExpenseSettlement(id, update);
+      res.json({ document: { ...doc, computedStatus }, settlement: updated });
+    } catch (error: any) {
+      console.error("sync-autentique error:", error);
+      res.status(500).json({ message: error.message || "Erro ao sincronizar status" });
+    }
+  });
+
+  // Upload da NFS pelo usuário do sistema (admin/financeiro)
+  const ADMIN_NFS_ALLOWED_MIMETYPES = [
+    "image/jpeg", "image/jpg", "image/png", "image/webp", "image/heic",
+    "application/pdf",
+    "text/xml", "application/xml",
+  ];
+
+  app.post(
+    "/api/expense-settlements/:id/nfs",
+    isAuthenticatedJWT,
+    (req, res, next) => {
+      upload.single("nfsFile")(req, res, (err: any) => {
+        if (err) {
+          console.error("Multer error on admin NFS upload:", err);
+          return res.status(400).json({ message: err.message || "Erro no upload da NFS" });
+        }
+        next();
+      });
+    },
+    async (req: any, res) => {
+      const file = (req as any).file as Express.Multer.File | undefined;
+      const cleanupUploadedFile = () => {
+        if (file?.filename) {
+          try { fs.unlinkSync(path.join(uploadsDir, file.filename)); } catch (_) {}
+        }
+      };
+
+      try {
+        // Bloquear motoristas — eles têm o endpoint externo próprio
+        const userRole = req.user?.role;
+        if (userRole === "motorista") {
+          cleanupUploadedFile();
+          return res.status(403).json({
+            message: "Motoristas devem usar o endpoint externo (/api/external/driver/...) para envio de NFS.",
+          });
+        }
+
+        if (!file) {
+          return res.status(400).json({ message: "Nenhum arquivo enviado. Inclua o arquivo no campo 'nfsFile'." });
+        }
+
+        if (!ADMIN_NFS_ALLOWED_MIMETYPES.includes(file.mimetype)) {
+          cleanupUploadedFile();
+          return res.status(400).json({
+            message: "Tipo de arquivo não suportado. Envie uma imagem (JPG/PNG/WEBP), PDF ou XML.",
+          });
+        }
+
+        const settlementId = req.params.id;
+        const settlement = await storage.getExpenseSettlement(settlementId);
+        if (!settlement) {
+          cleanupUploadedFile();
+          return res.status(404).json({ message: "Prestação de contas não encontrada" });
+        }
+
+        // Validar transição de status — permitir upload quando aprovado, substituição (enviado_nfs)
+        // ou quando já assinada (caso NFS chegue após a assinatura do motorista).
+        const allowedStatuses = ["aprovado", "enviado_nfs", "assinado"];
+        if (!allowedStatuses.includes(settlement.status)) {
+          cleanupUploadedFile();
+          return res.status(400).json({
+            message: `Só é possível anexar a NFS quando a prestação está aprovada, já tem NFS enviada ou está assinada. Status atual: "${settlement.status}".`,
+          });
+        }
+
+        const nfsFileUrl = `/uploads/${file.filename}`;
+        const oldFileUrl = settlement.nfsFileUrl;
+
+        let updated;
+        try {
+          // Se já está assinada, preservamos o status "assinado" (não voltamos para enviado_nfs).
+          const nextStatus = settlement.status === "assinado" ? "assinado" : "enviado_nfs";
+          updated = await storage.updateExpenseSettlement(settlementId, {
+            nfsFileUrl,
+            nfsSentAt: new Date(),
+            status: nextStatus,
+          });
+        } catch (dbErr) {
+          // Se falhou ao atualizar o DB, remove o arquivo que acabamos de subir
+          cleanupUploadedFile();
+          throw dbErr;
+        }
+
+        // Só remove o arquivo antigo APÓS o DB ter sido atualizado com sucesso
+        if (oldFileUrl) {
+          const oldFilename = oldFileUrl.replace(/^\/uploads\//, "");
+          try { fs.unlinkSync(path.join(uploadsDir, oldFilename)); } catch (_) {}
+        }
+
+        res.json({
+          ...updated,
+          message: "NFS enviada com sucesso",
+        });
+      } catch (error: any) {
+        console.error("Error uploading NFS (admin):", error);
+        cleanupUploadedFile();
+        res.status(500).json({ message: error.message || "Erro ao enviar NFS" });
+      }
+    },
+  );
 
   // Gerar PDF da prestação de contas
   app.get("/api/expense-settlements/:id/pdf", isAuthenticatedJWT, async (req, res) => {
@@ -5922,21 +6223,28 @@ export async function registerRoutes(
       }
 
       // Adiantamento e Saldo
+      // Saldo = Adiantamento − Total das Despesas − Valor da Rota (ganho)
+      // Positivo → motorista deve devolver à empresa
+      // Negativo → empresa deve pagar ao motorista
       const totalDespesasCalc = items?.reduce((sum, item) => sum + parseFloat(item.amount || "0"), 0) || 0;
       const advanceAmount = parseFloat(settlement.advanceAmount || "0");
-      const balance = totalDespesasCalc - advanceAmount;
-      
+      const rotaValue = parseFloat((settlement as any).proposalApproximateValue || "0");
+      const balance = advanceAmount - totalDespesasCalc - rotaValue;
+
       doc.fontSize(14).font("Helvetica-Bold").text("ADIANTAMENTO E SALDO");
       doc.moveDown(0.5);
       doc.fontSize(11).font("Helvetica");
       doc.text(`Valor Adiantado: R$ ${advanceAmount.toFixed(2).replace(".", ",")}`);
+      if (rotaValue > 0) {
+        doc.text(`Valor da Rota (ganho): R$ ${rotaValue.toFixed(2).replace(".", ",")}`);
+      }
       doc.text(`Total das Despesas: R$ ${totalDespesasCalc.toFixed(2).replace(".", ",")}`);
       doc.moveDown(0.5);
       doc.fontSize(12).font("Helvetica-Bold");
       if (balance > 0) {
-        doc.text(`MOTORISTA DEVE RECEBER: R$ ${balance.toFixed(2).replace(".", ",")}`);
+        doc.text(`MOTORISTA DEVE DEVOLVER: R$ ${balance.toFixed(2).replace(".", ",")}`);
       } else if (balance < 0) {
-        doc.text(`MOTORISTA DEVE DEVOLVER: R$ ${Math.abs(balance).toFixed(2).replace(".", ",")}`);
+        doc.text(`MOTORISTA DEVE RECEBER: R$ ${Math.abs(balance).toFixed(2).replace(".", ",")}`);
       } else {
         doc.text(`SALDO ZERADO`);
       }
@@ -7637,6 +7945,55 @@ export async function registerRoutes(
       const files = req.files as { [fieldname: string]: Express.Multer.File[] } | undefined;
       const body = { ...req.body };
 
+      // DEBUG (dev only): log presence/shape of incoming address fields to diagnose data-loss reports.
+      // PII (email, full address) is NOT logged; only field presence and lengths.
+      if (process.env.NODE_ENV !== "production") {
+        console.log("[external/drivers/register] address field shape:", {
+          hasCep: !!body.cep,
+          cepLen: body.cep?.length,
+          hasAddress: !!body.address,
+          hasAddressNumber: !!body.addressNumber,
+          hasComplement: !!body.complement,
+          hasNeighborhood: !!body.neighborhood,
+          hasCity: !!body.city,
+          stateRaw: body.state,
+        });
+      }
+
+      // Normalize state: accept full Brazilian state name (e.g. "Distrito Federal") and convert to UF code ("DF")
+      const stateNameToUf: Record<string, string> = {
+        "acre": "AC", "alagoas": "AL", "amapa": "AP", "amapá": "AP", "amazonas": "AM",
+        "bahia": "BA", "ceara": "CE", "ceará": "CE", "distrito federal": "DF",
+        "espirito santo": "ES", "espírito santo": "ES", "goias": "GO", "goiás": "GO",
+        "maranhao": "MA", "maranhão": "MA", "mato grosso": "MT", "mato grosso do sul": "MS",
+        "minas gerais": "MG", "para": "PA", "pará": "PA", "paraiba": "PB", "paraíba": "PB",
+        "parana": "PR", "paraná": "PR", "pernambuco": "PE", "piaui": "PI", "piauí": "PI",
+        "rio de janeiro": "RJ", "rio grande do norte": "RN", "rio grande do sul": "RS",
+        "rondonia": "RO", "rondônia": "RO", "roraima": "RR", "santa catarina": "SC",
+        "sao paulo": "SP", "são paulo": "SP", "sergipe": "SE", "tocantins": "TO",
+      };
+      if (typeof body.state === "string") {
+        const trimmed = body.state.trim();
+        if (trimmed.length > 2) {
+          // Normalize: lowercase, strip diacritics, collapse whitespace, replace - with space
+          const normalized = trimmed
+            .toLowerCase()
+            .normalize("NFD")
+            .replace(/[\u0300-\u036f]/g, "")
+            .replace(/[-_]+/g, " ")
+            .replace(/\s+/g, " ")
+            .trim();
+          const uf = stateNameToUf[normalized];
+          if (uf) {
+            body.state = uf;
+          } else if (process.env.NODE_ENV !== "production") {
+            console.warn("[external/drivers/register] unrecognized state value, will fail validation:", trimmed);
+          }
+        } else {
+          body.state = trimmed.toUpperCase();
+        }
+      }
+
       if (files?.cnhFrontFile?.[0]) {
         body.cnhFrontPhoto = `/uploads/${files.cnhFrontFile[0].filename}`;
       }
@@ -7671,10 +8028,12 @@ export async function registerRoutes(
         if (existingCpf) return res.status(409).json({ message: "CPF já cadastrado no sistema" });
       }
       const emailLower = body.email.trim().toLowerCase();
+      // Always normalize email to lowercase before persistence so future case-insensitive checks work reliably
+      body.email = emailLower;
       if (!req._emailChecked) {
-        const [existingEmailUser] = await db.select({ id: users.id }).from(users).where(eq(users.email, emailLower)).limit(1);
+        const [existingEmailUser] = await db.select({ id: users.id }).from(users).where(drizzleSql`lower(${users.email}) = ${emailLower}`).limit(1);
         if (existingEmailUser) return res.status(409).json({ message: "E-mail já cadastrado no sistema" });
-        const [existingEmailDriver] = await db.select({ id: drivers.id }).from(drivers).where(eq(drivers.email, emailLower)).limit(1);
+        const [existingEmailDriver] = await db.select({ id: drivers.id }).from(drivers).where(drizzleSql`lower(${drivers.email}) = ${emailLower}`).limit(1);
         if (existingEmailDriver) return res.status(409).json({ message: "E-mail já cadastrado no sistema" });
       }
 
@@ -8011,6 +8370,8 @@ export async function registerRoutes(
             estimatedFuel: expenseSettlements.estimatedFuel,
             submittedAt: expenseSettlements.submittedAt,
             driverFinishedSubmissionAt: expenseSettlements.driverFinishedSubmissionAt,
+            nfsFileUrl: expenseSettlements.nfsFileUrl,
+            nfsSentAt: expenseSettlements.nfsSentAt,
             createdAt: expenseSettlements.createdAt,
             requestNumber: transports.requestNumber,
             originName: yards.name,
@@ -8027,7 +8388,7 @@ export async function registerRoutes(
           .where(
             and(
               eq(expenseSettlements.driverId, driver.id),
-              inArray(expenseSettlements.status, ["pendente", "enviado"]),
+              inArray(expenseSettlements.status, ["pendente", "devolvido", "enviado", "aprovado", "assinado", "enviado_nfs"]),
             ),
           )
           .orderBy(desc(expenseSettlements.createdAt));
@@ -8040,12 +8401,22 @@ export async function registerRoutes(
               .where(eq(expenseSettlementItems.settlementId, row.id))
               .orderBy(desc(expenseSettlementItems.createdAt));
 
+            const statusLabelMap: Record<string, string> = {
+              pendente: "Pendente",
+              devolvido: "Devolvido para Correção",
+              enviado: "Aguardando Análise",
+              aprovado: "Aprovado - Enviar NFS",
+              assinado: "Assinado",
+              enviado_nfs: "Enviado para NFS",
+              concluido: "Concluído",
+            };
+
             return {
               id: row.id,
               transportId: row.transportId,
               requestNumber: row.requestNumber,
               status: row.status,
-              statusLabel: row.status === "enviado" ? "Aguardando Análise" : "Pendente",
+              statusLabel: statusLabelMap[row.status] ?? row.status,
               advanceAmount: row.advanceAmount,
               totalExpenses: row.totalExpenses,
               balanceAmount: row.balanceAmount,
@@ -8054,6 +8425,8 @@ export async function registerRoutes(
               estimatedFuel: row.estimatedFuel,
               submittedAt: row.submittedAt,
               driverFinishedSubmissionAt: row.driverFinishedSubmissionAt,
+              nfsFileUrl: row.nfsFileUrl,
+              nfsSentAt: row.nfsSentAt,
               createdAt: row.createdAt,
               origin: row.originName
                 ? { name: row.originName, city: row.originCity, state: row.originState }
@@ -8251,7 +8624,37 @@ export async function registerRoutes(
             0,
           );
           const advance = parseFloat(settlement.advanceAmount || "0") || 0;
-          const balance = totalExpenses - advance;
+
+          // Inclui o valor da rota (ganho do motorista) vindo da proposta de transporte
+          // Fórmula: (despesas + valor da rota) - adiantamento
+          // Positivo = motorista a receber | Negativo = motorista a devolver
+          let approximateValue = 0;
+          const [propItem] = await tx
+            .select()
+            .from(transportProposalItems)
+            .where(eq(transportProposalItems.transportId, settlement.transportId))
+            .limit(1);
+          if (propItem) {
+            const [proposal] = await tx
+              .select()
+              .from(transportProposals)
+              .where(eq(transportProposals.id, propItem.proposalId))
+              .limit(1);
+            if (proposal?.distanceKm && proposal?.travelRateId) {
+              const [rate] = await tx
+                .select({ rateValue: travelRates.rateValue })
+                .from(travelRates)
+                .where(eq(travelRates.id, proposal.travelRateId))
+                .limit(1);
+              if (rate) {
+                approximateValue = Math.round(Number(proposal.distanceKm) * Number(rate.rateValue) * 100) / 100;
+              }
+            }
+          }
+          // Saldo = Adiantamento − Total Comprovado − Valor da Rota (ganho).
+          // Positivo → motorista deve devolver à empresa.
+          // Negativo → empresa deve pagar ao motorista.
+          const balance = advance - totalExpenses - approximateValue;
 
           const now = new Date();
           const [updated] = await tx
@@ -8293,6 +8696,115 @@ export async function registerRoutes(
       } catch (error: any) {
         console.error("Error finalizing expense settlement:", error);
         res.status(500).json({ message: error.message || "Erro ao finalizar envio da prestação de contas" });
+      }
+    },
+  );
+
+  // ============== NFS DA PRESTAÇÃO DE CONTAS (APP MOBILE) ==============
+
+  const NFS_ALLOWED_MIMETYPES = [
+    "image/jpeg", "image/jpg", "image/png", "image/webp", "image/heic",
+    "application/pdf",
+    "text/xml", "application/xml",
+  ];
+
+  app.post(
+    "/api/external/driver/expense-settlements/:settlementId/nfs",
+    isAuthenticatedJWT,
+    (req, res, next) => {
+      upload.single("nfsFile")(req, res, (err: any) => {
+        if (err) {
+          console.error("Multer error on NFS upload:", err);
+          return res.status(400).json({ message: err.message || "Erro no upload da NFS" });
+        }
+        next();
+      });
+    },
+    async (req: AuthenticatedRequest, res) => {
+      try {
+        const user = req.user!;
+        const driverEmail = (user as any).email as string | null;
+        if (!driverEmail) {
+          return res.status(404).json({ message: "Usuário sem e-mail vinculado" });
+        }
+
+        const [driver] = await db.select().from(drivers).where(eq(drivers.email, driverEmail)).limit(1);
+        if (!driver) {
+          return res.status(404).json({ message: "Motorista não encontrado" });
+        }
+
+        const { settlementId } = req.params;
+        const [settlement] = await db
+          .select()
+          .from(expenseSettlements)
+          .where(eq(expenseSettlements.id, settlementId))
+          .limit(1);
+
+        if (!settlement) {
+          return res.status(404).json({ message: "Prestação de contas não encontrada" });
+        }
+        if (settlement.driverId !== driver.id) {
+          return res.status(403).json({ message: "Esta prestação não pertence ao motorista autenticado" });
+        }
+        const allowedStatuses = ["aprovado", "enviado_nfs", "assinado"];
+        if (!allowedStatuses.includes(settlement.status)) {
+          return res.status(400).json({
+            message: `Só é possível enviar a NFS quando a prestação está aprovada, com NFS já enviada ou assinada. Status atual: "${settlement.status}".`,
+          });
+        }
+
+        const file = (req as any).file as Express.Multer.File | undefined;
+        if (!file) {
+          return res.status(400).json({ message: "Nenhum arquivo enviado. Inclua o arquivo no campo 'nfsFile'." });
+        }
+
+        if (!NFS_ALLOWED_MIMETYPES.includes(file.mimetype)) {
+          // Delete the uploaded file since it's not allowed
+          try { fs.unlinkSync(path.join(uploadsDir, file.filename)); } catch (_) {}
+          return res.status(400).json({
+            message: "Tipo de arquivo não suportado. Envie uma imagem (JPG/PNG/WEBP), PDF ou XML.",
+          });
+        }
+
+        const nfsFileUrl = `/uploads/${file.filename}`;
+        const oldFileUrl = settlement.nfsFileUrl;
+        const now = new Date();
+
+        // Se já está assinada, preserva o status; caso contrário, marca como enviado_nfs.
+        const nextStatus = settlement.status === "assinado" ? "assinado" : "enviado_nfs";
+
+        const [updated] = await db
+          .update(expenseSettlements)
+          .set({
+            nfsFileUrl,
+            nfsSentAt: now,
+            status: nextStatus,
+          })
+          .where(eq(expenseSettlements.id, settlementId))
+          .returning();
+
+        // Remove arquivo anterior (se houver) somente após o DB ter sido atualizado.
+        if (oldFileUrl) {
+          const oldFilename = oldFileUrl.replace(/^\/uploads\//, "");
+          try { fs.unlinkSync(path.join(uploadsDir, oldFilename)); } catch (_) {}
+        }
+
+        const statusLabelMap: Record<string, string> = {
+          enviado_nfs: "Enviado NFS",
+          assinado: "Assinado",
+        };
+
+        res.json({
+          id: updated.id,
+          status: updated.status,
+          statusLabel: statusLabelMap[updated.status] || updated.status,
+          nfsFileUrl: updated.nfsFileUrl,
+          nfsSentAt: updated.nfsSentAt,
+          message: "NFS enviada com sucesso.",
+        });
+      } catch (error: any) {
+        console.error("Error uploading NFS for expense settlement:", error);
+        res.status(500).json({ message: error.message || "Erro ao enviar NFS" });
       }
     },
   );
